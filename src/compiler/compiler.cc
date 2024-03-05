@@ -23,10 +23,10 @@ namespace detail = tl2cgen::compiler::detail;
 
 // Lower the tree model to AST using the AST builder, and then return the builder object.
 detail::ast::ASTBuilder LowerToAST(
-    treelite::Model const& model, tl2cgen::compiler::CompilerParam const& param) {
+    treelite::Model const& model, tl2cgen::compiler::CompilerParam const& param, char const* predict_func_name="predict") {
   /* 1. Lower the tree ensemble model into Abstract Syntax Tree (AST) */
   detail::ast::ASTBuilder builder;
-  builder.BuildAST(model);
+  builder.BuildAST(model, predict_func_name);
 
   /* 2. Apply optimization passes to AST */
   if (param.annotate_in != "NULL") {
@@ -51,9 +51,9 @@ detail::ast::ASTBuilder LowerToAST(
 namespace tl2cgen::compiler {
 
 void CompileModel(treelite::Model const& model, CompilerParam const& param,
-    std::filesystem::path const& dirpath) {
+    std::filesystem::path const& dirpath, char const* predict_func_name) {
   tl2cgen::detail::filesystem::CreateDirectoryIfNotExist(dirpath);
-  auto builder = LowerToAST(model, param);
+  auto builder = LowerToAST(model, param, predict_func_name);
   /* Generate C code */
   detail::codegen::CodeCollection gencode;
   detail::codegen::GenerateCodeFromAST(builder.GetRootNode(), gencode);

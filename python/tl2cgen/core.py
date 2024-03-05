@@ -26,6 +26,7 @@ def generate_c_code(
     params: Optional[Dict[str, Any]],
     *,
     verbose: bool = False,
+    predict_func_name: str = "predict",
 ) -> None:
     """
     Generate prediction code from a tree ensemble model. The code will be C99
@@ -74,6 +75,7 @@ def generate_c_code(
             _model.handle,
             c_str(params_json_str),
             c_str(str(dirpath)),
+            c_str(predict_func_name),
         )
     )
 

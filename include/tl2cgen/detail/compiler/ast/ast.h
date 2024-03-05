@@ -43,10 +43,11 @@ inline ASTNode::~ASTNode() {}
 class MainNode : public ASTNode {
  public:
   MainNode(std::vector<double> base_scores, std::optional<std::vector<std::int32_t>> average_factor,
-      std::string postprocessor)
+      std::string postprocessor, std::string predict_func_name)
       : base_scores_(std::move(base_scores)),
         average_factor_(std::move(average_factor)),
-        postprocessor_(std::move(postprocessor)) {}
+        postprocessor_(std::move(postprocessor)),
+        predict_func_name_(std::move(predict_func_name)) {}
   std::vector<double> base_scores_;
   // Each output[target_id, class_id] should be incremented by base_scores_[target_id, class_id].
   std::optional<std::vector<std::int32_t>> average_factor_;
@@ -54,6 +55,7 @@ class MainNode : public ASTNode {
   // average_factor_[target_id, class_id].
   // If model.average_tree_output is False, set this field to std::nullopt.
   std::string postprocessor_;  // Postprocessor to apply after computing raw predictions
+  std::string predict_func_name_;  // Name of the prediction function
   std::string GetDump() const override;
 };
 

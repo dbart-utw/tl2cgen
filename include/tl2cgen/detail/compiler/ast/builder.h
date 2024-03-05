@@ -33,7 +33,7 @@ class ASTBuilder {
   ASTBuilder() : main_node_(nullptr) {}
 
   /* \brief Initially build AST from model */
-  void BuildAST(treelite::Model const& model);
+  void BuildAST(treelite::Model const& model, std::string predict_func_name);
   /* \brief Generate is_categorical[] array, which tells whether each feature
             is categorical or numerical */
   void GenerateIsCategoricalArray();

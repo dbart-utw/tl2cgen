@@ -56,9 +56,9 @@ std::optional<std::vector<std::int32_t>> ComputeAverageFactor(treelite::Model co
 
 namespace tl2cgen::compiler::detail::ast {
 
-void ASTBuilder::BuildAST(treelite::Model const& model) {
+void ASTBuilder::BuildAST(treelite::Model const& model, std::string predict_func_name) {
   main_node_ = AddNode<MainNode>(
-      nullptr, model.base_scores.AsVector(), ComputeAverageFactor(model), model.postprocessor);
+      nullptr, model.base_scores.AsVector(), ComputeAverageFactor(model), model.postprocessor, predict_func_name);
   meta_.num_target_ = model.num_target;
   meta_.num_class_ = model.num_class.AsVector();
   meta_.leaf_vector_shape_ = {model.leaf_vector_shape[0], model.leaf_vector_shape[1]};
