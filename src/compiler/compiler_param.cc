@@ -36,6 +36,9 @@ CompilerParam CompilerParam::ParseFromJSON(char const* param_json_str) {
     } else if (key == "native_lib_name") {
       TL2CGEN_CHECK(e.value.IsString()) << "Expected a string for 'native_lib_name'";
       param.native_lib_name = e.value.GetString();
+    } else if (key == "predict_func_name") {
+      TL2CGEN_CHECK(e.value.IsString()) << "Expected a string for 'predict_func_name'";
+      param.predict_func_name = e.value.GetString();
     } else {
       TL2CGEN_LOG(FATAL) << "Unrecognized key '" << key << "' in JSON";
     }

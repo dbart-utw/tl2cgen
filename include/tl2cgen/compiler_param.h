@@ -36,6 +36,8 @@ struct CompilerParam {
   int verbose{0};
   /*! \brief Native lib name (without extension) */
   std::string native_lib_name{"predictor"};
+  /*! \brief Name of the predict function to be generated */
+  std::string predict_func_name{"predict"};
   /*! \} */
 
   static CompilerParam ParseFromJSON(char const* param_json_str);

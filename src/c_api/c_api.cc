@@ -84,7 +84,7 @@ int TL2cgenAnnotationFree(TL2cgenAnnotationHandle handle) {
 }
 
 int TL2cgenGenerateCode(
-    TL2cgenModelHandle model, char const* compiler_params_json_str, char const* dirpath, char const* predict_func_name) {
+    TL2cgenModelHandle model, char const* compiler_params_json_str, char const* dirpath) {
   API_BEGIN();
   treelite::Model const* model_ = static_cast<treelite::Model*>(model);
   TL2CGEN_CHECK(model_);
@@ -94,7 +94,7 @@ int TL2cgenGenerateCode(
 
   /* Compile model */
   auto param = compiler::CompilerParam::ParseFromJSON(compiler_params_json_str);
-  compiler::CompileModel(*model_, param, dirpath_, predict_func_name);
+  compiler::CompileModel(*model_, param, dirpath_);
   API_END();
 }
 
