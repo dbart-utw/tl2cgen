@@ -26,6 +26,8 @@ struct CompilerParam {
   std::string annotate_in{"NULL"};
   /*! \brief Whether to quantize threshold points (0: no, >0: yes) */
   int quantize{0};
+  /*! \brief Whether to flint threshold points (0: no, >0: yes) */
+  bool flint{false};
   /*! \brief Option to enable parallel compilation;
              if set to nonzero, the trees will be evely distributed
              into ``[parallel_comp]`` files. Set this option to improve
@@ -36,8 +38,6 @@ struct CompilerParam {
   int verbose{0};
   /*! \brief Native lib name (without extension) */
   std::string native_lib_name{"predictor"};
-  /*! \brief Name of the predict function to be generated */
-  std::string predict_func_name{"predict"};
   /*! \} */
 
   static CompilerParam ParseFromJSON(char const* param_json_str);

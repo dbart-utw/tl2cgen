@@ -43,11 +43,10 @@ inline ASTNode::~ASTNode() {}
 class MainNode : public ASTNode {
  public:
   MainNode(std::vector<double> base_scores, std::optional<std::vector<std::int32_t>> average_factor,
-      std::string postprocessor, std::string predict_func_name)
+      std::string postprocessor)
       : base_scores_(std::move(base_scores)),
         average_factor_(std::move(average_factor)),
-        postprocessor_(std::move(postprocessor)),
-        predict_func_name_(std::move(predict_func_name)) {}
+        postprocessor_(std::move(postprocessor)) {}
   std::vector<double> base_scores_;
   // Each output[target_id, class_id] should be incremented by base_scores_[target_id, class_id].
   std::optional<std::vector<std::int32_t>> average_factor_;
@@ -55,7 +54,6 @@ class MainNode : public ASTNode {
   // average_factor_[target_id, class_id].
   // If model.average_tree_output is False, set this field to std::nullopt.
   std::string postprocessor_;  // Postprocessor to apply after computing raw predictions
-  std::string predict_func_name_;  // Name of the prediction function
   std::string GetDump() const override;
 };
 
@@ -96,15 +94,17 @@ class NumericalConditionNode : public ConditionNode {
  public:
   using ThresholdVariantT = std::variant<float, double>;
   NumericalConditionNode(std::uint32_t split_index, bool default_left, treelite::Operator op,
-      ThresholdVariantT threshold, std::optional<int> quantized_threshold)
+      ThresholdVariantT threshold, std::optional<int> quantized_threshold, bool flint)
       : ConditionNode(split_index, default_left),
         op_(op),
         threshold_(threshold),
         quantized_threshold_(quantized_threshold),
+        flint_(flint),
         zero_quantized_(-1) {}
   treelite::Operator op_;
   ThresholdVariantT threshold_;
   std::optional<int> quantized_threshold_;
+  bool flint_;
   int zero_quantized_;  // quantized value of 0.0f (useful when convert_missing_to_zero is set)
   std::string GetDump() const override;
 };

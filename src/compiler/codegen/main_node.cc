@@ -81,7 +81,7 @@ union Entry {{
 {dllexport}int32_t get_num_feature(void);
 {dllexport}const char* get_threshold_type(void);
 {dllexport}const char* get_leaf_output_type(void);
-{dllexport}void {predict_func_name}(union Entry* data, int pred_margin, {leaf_output_ctype}* result);
+{dllexport}void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result);
 void postprocess({leaf_output_ctype}* result);
 )TL2CGENTEMPLATE";
 
@@ -110,7 +110,7 @@ const char* get_leaf_output_type(void) {{
   return "{leaf_output_type}";
 }}
 
-void {predict_func_name}(union Entry* data, int pred_margin, {leaf_output_ctype}* result) {{
+void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result) {{
 )TL2CGENTEMPLATE";
 
 void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
@@ -123,8 +123,7 @@ void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
   gencode.SwitchToSourceFile("header.h");
   gencode.PushFragment(fmt::format(header_template, "threshold_ctype"_a = threshold_ctype_str,
       "leaf_output_ctype"_a = leaf_output_ctype_str, "dllexport"_a = DLLEXPORT_KEYWORD,
-      "num_target"_a = num_target, "max_num_class"_a = max_num_class,
-      "predict_func_name"_a = node->predict_func_name_));
+      "num_target"_a = num_target, "max_num_class"_a = max_num_class));
 
   gencode.SwitchToSourceFile("main.c");
   gencode.PushFragment(fmt::format(main_start_template,
@@ -132,8 +131,7 @@ void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
       "array_num_class"_a = RenderNumClassArray(node->meta_->num_class_),
       "num_feature"_a = node->meta_->num_feature_, "threshold_type"_a = GetThresholdTypeStr(node),
       "leaf_output_type"_a = GetLeafOutputTypeStr(node),
-      "leaf_output_ctype"_a = leaf_output_ctype_str,
-      "predict_func_name"_a = node->predict_func_name_));
+      "leaf_output_ctype"_a = leaf_output_ctype_str));
   gencode.ChangeIndent(1);
   TL2CGEN_CHECK_EQ(node->children_.size(), 1);
   GenerateCodeFromAST(node->children_[0], gencode);

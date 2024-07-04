@@ -19,6 +19,7 @@ CompilerParam CompilerParam::ParseFromJSON(char const* param_json_str) {
   TL2CGEN_CHECK(doc.IsObject()) << "Got an invalid JSON string:\n" << param_json_str;
   for (auto const& e : doc.GetObject()) {
     std::string const key = e.name.GetString();
+    std::cout << "Key: " << key << std::endl;
     if (key == "annotate_in") {
       TL2CGEN_CHECK(e.value.IsString()) << "Expected a string for 'annotate_in'";
       param.annotate_in = e.value.GetString();
@@ -26,6 +27,10 @@ CompilerParam CompilerParam::ParseFromJSON(char const* param_json_str) {
       TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'quantize'";
       param.quantize = e.value.GetInt();
       TL2CGEN_CHECK_GE(param.quantize, 0) << "'quantize' must be 0 or greater";
+    } else if (key == "flint") {
+      TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'flint'";
+      param.flint = e.value.GetInt();
+      TL2CGEN_CHECK_GE(param.flint, 0) << "'flint' must be 0 or greater";
     } else if (key == "parallel_comp") {
       TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'parallel_comp'";
       param.parallel_comp = e.value.GetInt();
@@ -36,9 +41,6 @@ CompilerParam CompilerParam::ParseFromJSON(char const* param_json_str) {
     } else if (key == "native_lib_name") {
       TL2CGEN_CHECK(e.value.IsString()) << "Expected a string for 'native_lib_name'";
       param.native_lib_name = e.value.GetString();
-    } else if (key == "predict_func_name") {
-      TL2CGEN_CHECK(e.value.IsString()) << "Expected a string for 'predict_func_name'";
-      param.predict_func_name = e.value.GetString();
     } else {
       TL2CGEN_LOG(FATAL) << "Unrecognized key '" << key << "' in JSON";
     }

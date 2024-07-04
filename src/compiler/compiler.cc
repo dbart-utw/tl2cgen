@@ -17,16 +17,20 @@
 #include <fstream>
 #include <string>
 
+
+
 namespace {
 
 namespace detail = tl2cgen::compiler::detail;
+
+
 
 // Lower the tree model to AST using the AST builder, and then return the builder object.
 detail::ast::ASTBuilder LowerToAST(
     treelite::Model const& model, tl2cgen::compiler::CompilerParam const& param) {
   /* 1. Lower the tree ensemble model into Abstract Syntax Tree (AST) */
   detail::ast::ASTBuilder builder;
-  builder.BuildAST(model, param.predict_func_name);
+  builder.BuildAST(model, param.flint);
 
   /* 2. Apply optimization passes to AST */
   if (param.annotate_in != "NULL") {
