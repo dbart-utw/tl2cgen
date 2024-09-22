@@ -106,8 +106,8 @@ class PredictFunction {
   PredictFunction(DataTypeEnum threshold_type, DataTypeEnum leaf_output_type,
       detail::SharedLibrary const& shared_lib, std::int32_t num_feature, std::int32_t num_target,
       std::int32_t max_num_class) {
-    TL2CGEN_CHECK(threshold_type == leaf_output_type)
-        << "The leaf output must have same type as the threshold";
+    // TL2CGEN_CHECK(threshold_type == leaf_output_type)
+    //     << "The leaf output must have same type as the threshold";
     int const target_variant_index = (threshold_type == DataTypeEnum::kFloat64);
     variant_ = detail::SetPredictFunctionVariant<0>(
         target_variant_index, shared_lib, num_feature, num_target, max_num_class);

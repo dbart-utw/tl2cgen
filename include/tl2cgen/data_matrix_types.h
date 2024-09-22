@@ -18,7 +18,7 @@ namespace tl2cgen {
 enum class DMatrixTypeEnum : std::uint8_t { kDenseCLayout = 0, kSparseCSR = 1 };
 constexpr int DMatrixTypeEnumCount = 2;
 
-enum class DMatrixElementTypeEnum : std::uint8_t { kFloat32 = 0, kFloat64 = 1 };
+enum class DMatrixElementTypeEnum : std::uint8_t { kFloat32 = 0, kFloat64 = 1, kUint32 = 2 };
 
 inline DMatrixTypeEnum DMatrixTypeFromString(std::string const& str) {
   if (str == "dense") {
@@ -36,6 +36,8 @@ inline DMatrixElementTypeEnum DMatrixElementTypeFromString(std::string const& st
     return DMatrixElementTypeEnum::kFloat32;
   } else if (str == "float64") {
     return DMatrixElementTypeEnum::kFloat64;
+  } else if (str == "uint32") {
+    return DMatrixElementTypeEnum::kUint32;
   } else {
     TL2CGEN_LOG(FATAL) << "Unrecognized DMatrix element type: " << str;
     return DMatrixElementTypeEnum::kFloat32;

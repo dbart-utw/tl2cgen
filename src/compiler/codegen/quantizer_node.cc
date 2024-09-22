@@ -70,6 +70,8 @@ for (int i = 0; i < {num_feature}; ++i) {{
   }}
 }}
 
+{timing}
+
 )TL2CGENTEMPLATE";
 
 char const* const quantize_arrays_template =
@@ -146,7 +148,9 @@ void HandleQuantizerNode(ast::QuantizerNode const* node, CodeCollection& gencode
   auto current_file = gencode.GetCurrentSourceFile();
   if (!array_threshold.empty() && !array_th_begin.empty() && !array_th_len.empty()) {
     gencode.PushFragment(
-        fmt::format(quantize_loop_template, "num_feature"_a = node->meta_->num_feature_));
+        fmt::format(quantize_loop_template,
+          "num_feature"_a = node->meta_->num_feature_,
+          "timing"_a = (node->timing_ ? "*quantize_runtime = get_time() - start_time;" : "")));
 
     gencode.SwitchToSourceFile("header.h");
     std::string const quantize_function_signature = fmt::format(

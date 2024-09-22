@@ -28,12 +28,16 @@ struct CompilerParam {
   int quantize{0};
   /*! \brief Whether to flint threshold points (0: no, >0: yes) */
   bool flint{false};
+  /*! \brief Whether to convert probabilities to integers (0: no, >0: yes) */
+  bool prob_to_int{false};
   /*! \brief Option to enable parallel compilation;
              if set to nonzero, the trees will be evely distributed
              into ``[parallel_comp]`` files. Set this option to improve
              compilation time and reduce memory consumption during
              compilation. */
   int parallel_comp{0};
+  /*! \brief Whether to add timing statements for benchmarking purposes */
+  bool timing{false};
   /*! \brief If >0, produce extra messages */
   int verbose{0};
   /*! \brief Native lib name (without extension) */

@@ -65,9 +65,9 @@ void RewriteThresholds(ast::ASTNode* node, std::vector<std::vector<ThresholdType
 
 namespace tl2cgen::compiler::detail::ast {
 
-void ASTBuilder::QuantizeThresholds() {
+void ASTBuilder::QuantizeThresholds(bool timing) {
   std::visit(
-      [this](auto&& meta) {
+      [this, timing](auto&& meta) {
         using TypeMetaT = std::remove_const_t<std::remove_reference_t<decltype(meta)>>;
         using ThresholdT = typename TypeMetaT::threshold_type;
         std::vector<std::set<ThresholdT>> cut_pts;
@@ -89,7 +89,7 @@ void ASTBuilder::QuantizeThresholds() {
         /* dynamic_cast<> is used here to check node types. This is to ensure
           that we don't accidentally call QuantizeThresholds() twice. */
 
-        ASTNode* quantizer_node = AddNode<QuantizerNode>(main_node_, std::move(cut_pts_vec));
+        ASTNode* quantizer_node = AddNode<QuantizerNode>(main_node_, std::move(cut_pts_vec), timing);
         quantizer_node->children_.push_back(top_func_node);
         top_func_node->parent_ = quantizer_node;
         main_node_->children_[0] = quantizer_node;

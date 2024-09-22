@@ -19,7 +19,6 @@ CompilerParam CompilerParam::ParseFromJSON(char const* param_json_str) {
   TL2CGEN_CHECK(doc.IsObject()) << "Got an invalid JSON string:\n" << param_json_str;
   for (auto const& e : doc.GetObject()) {
     std::string const key = e.name.GetString();
-    std::cout << "Key: " << key << std::endl;
     if (key == "annotate_in") {
       TL2CGEN_CHECK(e.value.IsString()) << "Expected a string for 'annotate_in'";
       param.annotate_in = e.value.GetString();
@@ -31,10 +30,18 @@ CompilerParam CompilerParam::ParseFromJSON(char const* param_json_str) {
       TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'flint'";
       param.flint = e.value.GetInt();
       TL2CGEN_CHECK_GE(param.flint, 0) << "'flint' must be 0 or greater";
+    } else if (key == "prob_to_int") {
+      TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'prob_to_int'";
+      param.prob_to_int = e.value.GetInt();
+      TL2CGEN_CHECK_GE(param.prob_to_int, 0) << "'prob_to_int' must be 0 or greater";
     } else if (key == "parallel_comp") {
       TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'parallel_comp'";
       param.parallel_comp = e.value.GetInt();
       TL2CGEN_CHECK_GE(param.parallel_comp, 0) << "'parallel_comp' must be 0 or greater";
+    } else if (key == "timing") {
+      TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'timing'";
+      param.timing = e.value.GetInt();
+      TL2CGEN_CHECK_GE(param.quantize, 0) << "'timing' must be 0 or greater";
     } else if (key == "verbose") {
       TL2CGEN_CHECK(e.value.IsInt()) << "Expected an integer for 'verbose'";
       param.verbose = e.value.GetInt();

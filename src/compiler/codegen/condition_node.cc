@@ -32,6 +32,8 @@ std::string GetFabsCFunc(std::string const& threshold_type) {
     return "fabsf";
   } else if (threshold_type == "double") {
     return "fabs";
+  } else if (threshold_type == "uint32_t") {
+    return "abs";
   } else {
     TL2CGEN_LOG(FATAL) << "Unrecognized type: " << threshold_type;
     return "";
@@ -41,6 +43,12 @@ std::string GetFabsCFunc(std::string const& threshold_type) {
 std::string float_to_bin(float number) {
     std::stringstream ss;
     ss << "0x" << std::hex << std::setw(8) << std::setfill('0') << *(reinterpret_cast<unsigned int*>(&number));
+    return ss.str();
+}
+
+std::string double_to_bin(double number) {
+    std::stringstream ss;
+    ss << "0x" << std::hex << std::setw(16) << std::setfill('0') << *(reinterpret_cast<unsigned long long*>(&number));
     return ss.str();
 }
 
@@ -60,45 +68,41 @@ inline std::string ExtractNumericalCondition(ast::NumericalConditionNode const* 
     result = fmt::format("{lhs} {opname} {threshold}", "lhs"_a = lhs, 
     "opname"_a = treelite::OperatorToString(node->op_), "threshold"_a = *node->quantized_threshold_);
   } else if (node->flint_) { // Flinted threshold
-
     if (threshold_type == "float") {
-
       std::string negatstring = "";
       float splitval = std::get<float>(node->threshold_);
       std::string op = treelite::OperatorToString(node->op_);
+
       if (splitval < 0) {
           splitval = -splitval;
           negatstring = " ^ (0b1 << 31)";
           op = getOppositeOperator(op);
       }
-      
+
       std::string split_val_bin = float_to_bin(splitval);
       result = "(*( ((int*)(data)) + "+std::to_string(node->split_index_)+" )"
       +negatstring+")"+op+"((int)("+split_val_bin+"))";
-      }
-
-    else if (threshold_type == "double") {
-
+    } else if (threshold_type == "double") {
       std::string negatstring = "";
-      float splitval = std::get<double>(node->threshold_);
+      double splitval = std::get<double>(node->threshold_);
       std::string op = treelite::OperatorToString(node->op_);
+
       if (splitval < 0) {
           splitval = -splitval;
           negatstring = " ^ (0b1 << 31)";
           op = getOppositeOperator(op);
       }
-      
-      std::string split_val_bin = float_to_bin(splitval);
+      // TODO revert to original code
+      // std::string split_val_bin = double_to_bin(splitval);
+      // result = "(*( ((long long*)(data)) + "+std::to_string(node->split_index_)+" )"
+      // +negatstring+")"+op+"((long long)("+split_val_bin+"))";
+      std::string split_val_bin = float_to_bin((float)splitval);
       result = "(*( ((int*)(data)) + "+std::to_string(node->split_index_)+" )"
       +negatstring+")"+op+"((int)("+split_val_bin+"))";
-    }
-
-    else  { // Invalid threhshold type
+    } else  { // Invalid threhshold type
       throw std::runtime_error("Invalid threshold type.");
     }
-
   } else {
-    
     result = std::visit([&](auto&& threshold) -> std::string {
           using ThresholdT = std::remove_const_t<std::remove_reference_t<decltype(threshold)>>;
           if (std::isinf(threshold)) {  // infinite threshold

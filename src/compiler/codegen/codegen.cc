@@ -27,6 +27,8 @@ std::string GetCType() {
     return "float";
   } else if constexpr (std::is_same_v<T, double>) {
     return "double";
+  } else if constexpr (std::is_same_v<T, uint32_t>) {
+    return "uint32_t";
   } else {
     TL2CGEN_LOG(FATAL) << "Unrecognized type: " << typeid(T).name();
     return "";

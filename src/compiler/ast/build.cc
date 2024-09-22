@@ -56,9 +56,9 @@ std::optional<std::vector<std::int32_t>> ComputeAverageFactor(treelite::Model co
 
 namespace tl2cgen::compiler::detail::ast {
 
-void ASTBuilder::BuildAST(treelite::Model const& model, bool flint) {
+void ASTBuilder::BuildAST(treelite::Model const& model, bool flint, bool prob_to_int, bool timing) {
   main_node_ = AddNode<MainNode>(
-      nullptr, model.base_scores.AsVector(), ComputeAverageFactor(model), model.postprocessor);
+      nullptr, model.base_scores.AsVector(), ComputeAverageFactor(model), model.postprocessor, timing, prob_to_int);
   meta_.num_target_ = model.num_target;
   meta_.num_class_ = model.num_class.AsVector();
   meta_.leaf_vector_shape_ = {model.leaf_vector_shape[0], model.leaf_vector_shape[1]};
@@ -72,7 +72,7 @@ void ASTBuilder::BuildAST(treelite::Model const& model, bool flint) {
       [&](auto&& model_preset) {
         for (std::size_t tree_id = 0; tree_id < model_preset.trees.size(); ++tree_id) {
           ASTNode* tree_head = BuildASTFromTree(func, model_preset.trees[tree_id],
-              static_cast<int>(tree_id), model.target_id[tree_id], model.class_id[tree_id], 0, flint);
+              static_cast<int>(tree_id), model.target_id[tree_id], model.class_id[tree_id], 0, flint, prob_to_int, model.GetNumTree());
           func->children_.push_back(tree_head);
         }
         using ModelPresetT = std::remove_const_t<std::remove_reference_t<decltype(model_preset)>>;
@@ -97,19 +97,24 @@ void ASTBuilder::BuildAST(treelite::Model const& model, bool flint) {
 template <typename ThresholdType, typename LeafOutputType>
 ASTNode* ASTBuilder::BuildASTFromTree(ASTNode* parent,
     treelite::Tree<ThresholdType, LeafOutputType> const& tree, int tree_id, std::int32_t target_id,
-    std::int32_t class_id, int nid, bool flint) {
+    std::int32_t class_id, int nid, bool flint, bool prob_to_int, int num_trees) {
   ASTNode* ast_node = nullptr;
   if (tree.IsLeaf(nid)) {
     if (meta_.leaf_vector_shape_[0] == 1 && meta_.leaf_vector_shape_[1] == 1) {
       ast_node = AddNode<OutputNode>(
-          parent, target_id, class_id, std::vector<LeafOutputType>{tree.LeafValue(nid)});
+          parent, target_id, class_id, std::vector<LeafOutputType>{tree.LeafValue(nid)}, prob_to_int, num_trees);
     } else {
-      ast_node = AddNode<OutputNode>(parent, target_id, class_id, tree.LeafVector(nid));
+      ast_node = AddNode<OutputNode>(parent, target_id, class_id, tree.LeafVector(nid), prob_to_int, num_trees);
     }
   } else {
     if (tree.NodeType(nid) == treelite::TreeNodeType::kNumericalTestNode) {
-      ast_node = AddNode<NumericalConditionNode>(parent, tree.SplitIndex(nid),
-          tree.DefaultLeft(nid), tree.ComparisonOp(nid), tree.Threshold(nid), std::nullopt, flint);
+      if (prob_to_int) {
+        ast_node = AddNode<NumericalConditionNode>(parent, tree.SplitIndex(nid),
+            tree.DefaultLeft(nid), tree.ComparisonOp(nid), static_cast<float>(tree.Threshold(nid)), std::nullopt, flint);
+      } else {
+        ast_node = AddNode<NumericalConditionNode>(parent, tree.SplitIndex(nid),
+            tree.DefaultLeft(nid), tree.ComparisonOp(nid), tree.Threshold(nid), std::nullopt, flint);
+      }
     } else {
       ast_node = AddNode<CategoricalConditionNode>(parent, tree.SplitIndex(nid),
           tree.DefaultLeft(nid), tree.CategoryList(nid), tree.CategoryListRightChild(nid));
@@ -118,9 +123,9 @@ ASTNode* ASTBuilder::BuildASTFromTree(ASTNode* parent,
       dynamic_cast<ConditionNode*>(ast_node)->gain_ = tree.Gain(nid);
     }
     ast_node->children_.push_back(
-        BuildASTFromTree(ast_node, tree, tree_id, target_id, class_id, tree.LeftChild(nid), flint));
+        BuildASTFromTree(ast_node, tree, tree_id, target_id, class_id, tree.LeftChild(nid), flint, prob_to_int, num_trees));
     ast_node->children_.push_back(
-        BuildASTFromTree(ast_node, tree, tree_id, target_id, class_id, tree.RightChild(nid), flint));
+        BuildASTFromTree(ast_node, tree, tree_id, target_id, class_id, tree.RightChild(nid), flint, prob_to_int, num_trees));
   }
   ast_node->node_id_ = nid;
   ast_node->tree_id_ = tree_id;
@@ -135,8 +140,8 @@ ASTNode* ASTBuilder::BuildASTFromTree(ASTNode* parent,
 }
 
 template ASTNode* ASTBuilder::BuildASTFromTree(
-    ASTNode*, treelite::Tree<float, float> const&, int, std::int32_t, std::int32_t, int, bool);
+    ASTNode*, treelite::Tree<float, float> const&, int, std::int32_t, std::int32_t, int, bool, bool, int);
 template ASTNode* ASTBuilder::BuildASTFromTree(
-    ASTNode*, treelite::Tree<double, double> const&, int, std::int32_t, std::int32_t, int, bool);
+    ASTNode*, treelite::Tree<double, double> const&, int, std::int32_t, std::int32_t, int, bool, bool, int);
 
 }  // namespace tl2cgen::compiler::detail::ast

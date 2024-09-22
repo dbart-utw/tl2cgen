@@ -33,7 +33,7 @@ class ASTBuilder {
   ASTBuilder() : main_node_(nullptr) {}
 
   /* \brief Initially build AST from model */
-  void BuildAST(treelite::Model const& model, bool flint);
+  void BuildAST(treelite::Model const& model, bool flint, bool prob_to_int, bool timing);
   /* \brief Generate is_categorical[] array, which tells whether each feature
             is categorical or numerical */
   void GenerateIsCategoricalArray();
@@ -43,7 +43,7 @@ class ASTBuilder {
    */
   void SplitIntoTUs(int num_tu);
   /* \brief Replace split thresholds with integers */
-  void QuantizeThresholds();
+  void QuantizeThresholds(bool timing);
   /* \brief Load data counts from annotation file */
   void LoadDataCounts(std::vector<std::vector<std::uint64_t>> const& counts);
   /*
@@ -69,7 +69,7 @@ class ASTBuilder {
   template <typename ThresholdType, typename LeafOutputType>
   ASTNode* BuildASTFromTree(ASTNode* parent,
       treelite::Tree<ThresholdType, LeafOutputType> const& tree, int tree_id,
-      std::int32_t target_id, std::int32_t class_id, int nid, bool flint);
+      std::int32_t target_id, std::int32_t class_id, int nid, bool flint, bool prob_to_int, int num_trees);
 
   // Keep tract of all nodes built so far, to prevent memory leak
   std::vector<std::unique_ptr<ASTNode>> nodes_;

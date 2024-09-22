@@ -52,12 +52,13 @@ namespace tl2cgen::compiler::detail::codegen {
 
 char const* const header_template =
     R"TL2CGENTEMPLATE(
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdint.h>
+{include_time}
 
 #if defined(__clang__) || defined(__GNUC__)
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
@@ -81,7 +82,7 @@ union Entry {{
 {dllexport}int32_t get_num_feature(void);
 {dllexport}const char* get_threshold_type(void);
 {dllexport}const char* get_leaf_output_type(void);
-{dllexport}void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result);
+{dllexport}void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result{timing_params});
 void postprocess({leaf_output_ctype}* result);
 )TL2CGENTEMPLATE";
 
@@ -109,21 +110,33 @@ const char* get_threshold_type(void) {{
 const char* get_leaf_output_type(void) {{
   return "{leaf_output_type}";
 }}
+{get_time_func}
 
-void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result) {{
+void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result{timing_params}) {{
 )TL2CGENTEMPLATE";
 
 void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
+  if (node->prob_to_int_) {
+    node->meta_->type_meta_ = tl2cgen::compiler::detail::ast::ModelMeta::TypeMeta<float, uint32_t>();
+  }
   auto const threshold_ctype_str = GetThresholdCType(node);
   auto const leaf_output_ctype_str = GetLeafOutputCType(node);
   std::int32_t const num_target = node->meta_->num_target_;
   std::vector<std::int32_t>& num_class = node->meta_->num_class_;
   std::int32_t const max_num_class = *std::max_element(num_class.begin(), num_class.end());
+  std::string timing_params = node->timing_ ? ", double* runtime, double* quantize_runtime" : "";
+  std::string include_time = node->timing_ ? "#include <time.h>" : "";
+  std::string get_time_func = node->timing_ ? "double get_time(void) {{\n  struct timespec time;\n  clock_gettime(CLOCK_MONOTONIC, &time);\n  return time.tv_sec*1000 + time.tv_nsec*1e-6;\n}}" : "";
 
   gencode.SwitchToSourceFile("header.h");
-  gencode.PushFragment(fmt::format(header_template, "threshold_ctype"_a = threshold_ctype_str,
-      "leaf_output_ctype"_a = leaf_output_ctype_str, "dllexport"_a = DLLEXPORT_KEYWORD,
-      "num_target"_a = num_target, "max_num_class"_a = max_num_class));
+  gencode.PushFragment(fmt::format(header_template,
+      "threshold_ctype"_a = threshold_ctype_str,
+      "leaf_output_ctype"_a = leaf_output_ctype_str,
+      "dllexport"_a = DLLEXPORT_KEYWORD,
+      "num_target"_a = num_target,
+      "max_num_class"_a = max_num_class,
+      "include_time"_a = include_time,
+      "timing_params"_a = timing_params));
 
   gencode.SwitchToSourceFile("main.c");
   gencode.PushFragment(fmt::format(main_start_template,
@@ -131,13 +144,19 @@ void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
       "array_num_class"_a = RenderNumClassArray(node->meta_->num_class_),
       "num_feature"_a = node->meta_->num_feature_, "threshold_type"_a = GetThresholdTypeStr(node),
       "leaf_output_type"_a = GetLeafOutputTypeStr(node),
-      "leaf_output_ctype"_a = leaf_output_ctype_str));
+      "leaf_output_ctype"_a = leaf_output_ctype_str,
+      "timing_params"_a = timing_params,
+      "get_time_func"_a = get_time_func));
+
   gencode.ChangeIndent(1);
+  if (node->timing_) {
+    gencode.PushFragment("double start_time = get_time();");
+  }
   TL2CGEN_CHECK_EQ(node->children_.size(), 1);
   GenerateCodeFromAST(node->children_[0], gencode);
 
   // Tree averaging
-  if (node->average_factor_) {
+  if (node->average_factor_ && !node->prob_to_int_) {
     gencode.PushFragment("\n// Average tree outputs");
     std::vector<std::int32_t> const& average_factor = node->average_factor_.value();
     for (std::int32_t target_id = 0; target_id < num_target; ++target_id) {
@@ -163,6 +182,11 @@ void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
   gencode.PushFragment(
       "\n// Apply postprocessor"
       "\nif (!pred_margin) { postprocess(result); }");
+  if (node->timing_) {
+    gencode.PushFragment(
+        "\n// Get total runtime"
+        "\n*runtime = get_time() - start_time;");
+  }
   gencode.ChangeIndent(-1);
   gencode.PushFragment("}");
   gencode.PushFragment(GetPostprocessorFunc(*node->meta_, node->postprocessor_));
