@@ -32,6 +32,8 @@ std::string GetDumpFromType() {
     return "float32";
   } else if constexpr (std::is_same_v<T, double>) {
     return "float64";
+  } else if constexpr (std::is_same_v<T, uint32_t>) {
+    return "uint32";
   } else {
     return fmt::format("<unknown-type {}>", typeid(T).name());
   }

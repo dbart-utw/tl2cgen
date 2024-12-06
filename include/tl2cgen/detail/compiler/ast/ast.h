@@ -43,10 +43,11 @@ inline ASTNode::~ASTNode() {}
 class MainNode : public ASTNode {
  public:
   MainNode(std::vector<double> base_scores, std::optional<std::vector<std::int32_t>> average_factor,
-      std::string postprocessor)
+      std::string postprocessor, bool prob_to_int)
       : base_scores_(std::move(base_scores)),
         average_factor_(std::move(average_factor)),
-        postprocessor_(std::move(postprocessor)) {}
+        postprocessor_(std::move(postprocessor)),
+        prob_to_int_(prob_to_int) {}
   std::vector<double> base_scores_;
   // Each output[target_id, class_id] should be incremented by base_scores_[target_id, class_id].
   std::optional<std::vector<std::int32_t>> average_factor_;
@@ -54,6 +55,7 @@ class MainNode : public ASTNode {
   // average_factor_[target_id, class_id].
   // If model.average_tree_output is False, set this field to std::nullopt.
   std::string postprocessor_;  // Postprocessor to apply after computing raw predictions
+  bool prob_to_int_;
   std::string GetDump() const override;
 };
 
@@ -94,15 +96,17 @@ class NumericalConditionNode : public ConditionNode {
  public:
   using ThresholdVariantT = std::variant<float, double>;
   NumericalConditionNode(std::uint32_t split_index, bool default_left, treelite::Operator op,
-      ThresholdVariantT threshold, std::optional<int> quantized_threshold)
+      ThresholdVariantT threshold, std::optional<int> quantized_threshold, bool thresh_as_int)
       : ConditionNode(split_index, default_left),
         op_(op),
         threshold_(threshold),
         quantized_threshold_(quantized_threshold),
+        thresh_as_int_(thresh_as_int),
         zero_quantized_(-1) {}
   treelite::Operator op_;
   ThresholdVariantT threshold_;
   std::optional<int> quantized_threshold_;
+  bool thresh_as_int_;
   int zero_quantized_;  // quantized value of 0.0f (useful when convert_missing_to_zero is set)
   std::string GetDump() const override;
 };
@@ -123,10 +127,12 @@ class OutputNode : public ASTNode {
  public:
   using OutputVariantT = std::variant<std::vector<float>, std::vector<double>>;
   explicit OutputNode(
-      std::int32_t target_id, std::int32_t class_id, OutputVariantT const& leaf_output)
-      : target_id_(target_id), class_id_(class_id), leaf_output_(leaf_output) {}
+      std::int32_t target_id, std::int32_t class_id, OutputVariantT const& leaf_output, bool prob_to_int, int num_trees)
+      : target_id_(target_id), class_id_(class_id), leaf_output_(leaf_output), prob_to_int_(prob_to_int), num_trees_(num_trees) {}
   std::int32_t target_id_, class_id_;
   OutputVariantT leaf_output_;
+  bool prob_to_int_;
+  int num_trees_;
   std::string GetDump() const override;
 };
 
@@ -147,7 +153,7 @@ class ModelMeta {
     using threshold_type = ThresholdType;
     using leaf_output_type = LeafOutputType;
   };
-  std::variant<TypeMeta<float, float>, TypeMeta<double, double>> type_meta_;
+  std::variant<TypeMeta<float, float>, TypeMeta<double, double>, TypeMeta<float, uint32_t>> type_meta_;
   // Helper class to remember types for thresholds and leaf outputs
 };
 

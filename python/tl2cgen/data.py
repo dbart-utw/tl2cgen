@@ -95,8 +95,8 @@ class DMatrix:
             data_type = type_info_to_numpy_type(dtype)
         data_type_code = numpy_type_to_type_info(data_type)
         data_ptr_type = ctypes.POINTER(type_info_to_ctypes_type(data_type_code))
-        if data_type_code not in ["float32", "float64"]:
-            raise ValueError("data should be either float32 or float64 type")
+        if data_type_code not in ["float32", "float64", "uint32"]:
+            raise ValueError("data should be either float32 or float64 or uint32 type")
 
         data = np.array(csr.data, copy=False, dtype=data_type, order="C")
         indices = np.array(csr.indices, copy=False, dtype=np.uintc, order="C")
@@ -136,8 +136,8 @@ class DMatrix:
         )
         data_type_code = numpy_type_to_type_info(data_type)
         data_ptr_type = ctypes.POINTER(type_info_to_ctypes_type(data_type_code))
-        if data_type_code not in ["float32", "float64"]:
-            raise ValueError("data should be either float32 or float64 type")
+        if data_type_code not in ["float32", "float64", "uint32"]:
+            raise ValueError("data should be either float32 or float64 or uint32 type")
         # flatten the array by rows and ensure it is float32.
         # we try to avoid data copies if possible
         # (reshape returns a view when possible and we explicitly tell np.array to

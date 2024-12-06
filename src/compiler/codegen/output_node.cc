@@ -19,17 +19,31 @@ using namespace fmt::literals;
 
 namespace tl2cgen::compiler::detail::codegen {
 
+uint32_t convert_prob_to_int(float prob, int num_trees) {
+  return static_cast<uint32_t>(prob * UINT_MAX) / num_trees;
+}
+
+uint32_t convert_prob_to_int(double prob, int num_trees) {
+  return static_cast<uint32_t>(prob * UINT_MAX) / num_trees;
+}
+
 void HandleOutputNode(ast::OutputNode const* node, CodeCollection& gencode) {
   TL2CGEN_CHECK_EQ(node->children_.size(), 0);
 
   std::int32_t const num_target = node->meta_->num_target_;
+  std::int32_t const num_trees = node->num_trees_;
   std::vector<std::int32_t> const& num_class = node->meta_->num_class_;
   std::int32_t const max_num_class = *std::max_element(num_class.begin(), num_class.end());
-
+  bool prob_to_int = node->prob_to_int_;
   // In the predict() function, the result[] array represents the slice output(row_id, :, :)
   // that holds the prediction for a single row.
   std::visit(
       [&](auto&& leaf_output) {
+        std::vector<uint32_t> leaf_output_int;
+        for (auto const& output : leaf_output) {
+          leaf_output_int.push_back(convert_prob_to_int(output, num_trees));
+        }
+
         if (node->target_id_ < 0 && node->class_id_ < 0) {
           // The leaf node produces output for all targets and all classes
           std::array<std::int32_t, 2> const expected_shape{num_target, max_num_class};
@@ -40,7 +54,7 @@ void HandleOutputNode(ast::OutputNode const* node, CodeCollection& gencode) {
               // output(row_id, target_id, class_id) += leaf(target_id, class_id)
               gencode.PushFragment(fmt::format("result[{offset}] += {leaf};",
                   "offset"_a = target_id * max_num_class + class_id,
-                  "leaf"_a = leaf_output[target_id * max_num_class + class_id]));
+                  "leaf"_a = prob_to_int ? leaf_output_int[target_id * max_num_class + class_id] : leaf_output[target_id * max_num_class + class_id]));
             }
           }
         } else if (node->target_id_ < 0) {
@@ -54,7 +68,7 @@ void HandleOutputNode(ast::OutputNode const* node, CodeCollection& gencode) {
             // output(row_id, target_id, class_id) += leaf(target_id)
             gencode.PushFragment(fmt::format("result[{offset}] += {leaf};",
                 "offset"_a = target_id * max_num_class + class_id,
-                "leaf"_a = leaf_output[target_id]));
+                "leaf"_a = prob_to_int ? leaf_output_int[target_id] : leaf_output[target_id]));
           }
         } else if (node->class_id_ < 0) {
           // The leaf node produces output for all classes and a single target
@@ -67,7 +81,7 @@ void HandleOutputNode(ast::OutputNode const* node, CodeCollection& gencode) {
             // output(row_id, target_id, class_id) += leaf(class_id)
             gencode.PushFragment(fmt::format("result[{offset}] += {leaf};",
                 "offset"_a = target_id * max_num_class + class_id,
-                "leaf"_a = leaf_output[class_id]));
+                "leaf"_a = prob_to_int ? leaf_output_int[class_id] : leaf_output[class_id]));
           }
         } else {
           // The leaf node produces output for a single target and a single class
@@ -80,7 +94,7 @@ void HandleOutputNode(ast::OutputNode const* node, CodeCollection& gencode) {
           auto const class_id = node->class_id_;
           // output(row_id, target_id, class_id) += leaf(0)
           gencode.PushFragment(fmt::format("result[{offset}] += {leaf};",
-              "offset"_a = target_id * max_num_class + class_id, "leaf"_a = leaf_output[0]));
+              "offset"_a = target_id * max_num_class + class_id, "leaf"_a = prob_to_int ? leaf_output_int[0] : leaf_output[0]));
         }
       },
       node->leaf_output_);

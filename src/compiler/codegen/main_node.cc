@@ -52,11 +52,11 @@ namespace tl2cgen::compiler::detail::codegen {
 
 char const* const header_template =
     R"TL2CGENTEMPLATE(
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <float.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -114,6 +114,9 @@ void predict(union Entry* data, int pred_margin, {leaf_output_ctype}* result) {{
 )TL2CGENTEMPLATE";
 
 void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
+  if (node->prob_to_int_) {
+    node->meta_->type_meta_ = tl2cgen::compiler::detail::ast::ModelMeta::TypeMeta<float, uint32_t>();
+  }
   auto const threshold_ctype_str = GetThresholdCType(node);
   auto const leaf_output_ctype_str = GetLeafOutputCType(node);
   std::int32_t const num_target = node->meta_->num_target_;
@@ -137,7 +140,7 @@ void HandleMainNode(ast::MainNode const* node, CodeCollection& gencode) {
   GenerateCodeFromAST(node->children_[0], gencode);
 
   // Tree averaging
-  if (node->average_factor_) {
+  if (node->average_factor_ && !node->prob_to_int_) {
     gencode.PushFragment("\n// Average tree outputs");
     std::vector<std::int32_t> const& average_factor = node->average_factor_.value();
     for (std::int32_t target_id = 0; target_id < num_target; ++target_id) {

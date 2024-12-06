@@ -28,6 +28,8 @@ std::string GetCopySignCFunc(std::string const& leaf_output_ctype) {
     return "copysignf";
   } else if (leaf_output_ctype == "double") {
     return "copysign";
+  } else if (leaf_output_ctype == "uint32_t") {
+    return "";
   } else {
     TL2CGEN_LOG(FATAL) << "Unrecognized type: " << leaf_output_ctype;
     return "";

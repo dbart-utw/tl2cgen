@@ -26,6 +26,10 @@ struct CompilerParam {
   std::string annotate_in{"NULL"};
   /*! \brief Whether to quantize threshold points (0: no, >0: yes) */
   int quantize{0};
+  /*! \brief Whether to thresh_as_int threshold points (0: no, >0: yes) */
+  bool thresh_as_int{false};
+  /*! \brief Whether to convert probabilities to integers (0: no, >0: yes) */
+  bool prob_to_int{false};
   /*! \brief Option to enable parallel compilation;
              if set to nonzero, the trees will be evely distributed
              into ``[parallel_comp]`` files. Set this option to improve

@@ -150,6 +150,9 @@ class Predictor:
         elif self.leaf_output_type == "float64":
             output_array_dtype = np.float64
             output_array_cptr_type = ctypes.POINTER(ctypes.c_double)  # type: ignore
+        elif self.leaf_output_type == "uint32":
+            output_array_dtype = np.uint32
+            output_array_cptr_type = ctypes.POINTER(ctypes.c_uint32)
         else:
             raise TL2cgenError(f"Unknown leaf_output_type {self.leaf_output_type}")
 
